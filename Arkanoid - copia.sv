@@ -154,16 +154,16 @@ wire  [7:0] ioctl_dout;
 
 wire [10:0] ps2_key;
 wire [24:0] ps2_mouse;
-wire [31:0] joystick_0_USB, joystick_1_USB;
+wire [31:0] joystick_0, joystick_1;
 wire [31:0] joy = joystick_0 | joystick_1;
-wire [15:0] joystick_analog_0, joystick_analog_1;
+wire [15:0] joystick_analog_0_USB, joystick_analog_1_USB;
 wire  [7:0] joya = joystick_analog_0[7:0] ? joystick_analog_0[7:0] : joystick_analog_1[7:0];
 
 wire [21:0] gamma_bus;
 
 wire  [8:0] sp0, sp1;
 
-wire [15:0] joystick_0 = |status[63:62] ? {
+wire [15:0] joystick_analog_0 = |status[63:62] ? {
 	joydb9md_1[11],// start_1	-> 8 * Z (dummy)
 	joydb9md_1[8] | (joydb9md_1[7] & joydb9md_1[4]),// Coin -> 7 *  Mode or Start + B	
 	joydb9md_1[7], // start_2	-> 6 * Start
@@ -174,9 +174,9 @@ wire [15:0] joystick_0 = |status[63:62] ? {
 	joydb9md_1[1], // btn_left	-> 1 * L
 	joydb9md_1[0], // btn_righ	-> 0 * R 
 	} 
-	: joystick_0_USB;
+	: joystick_analog_0_USB;
 
-wire [15:0] joystick_1 =  status[63]    ? {
+wire [15:0] joystick_analog_1 =  status[63]    ? {
 	joydb9md_2[7], // start_1	-> 8 * Z (dummy)
 	joydb9md_2[8] | (joydb9md_2[7] & joydb9md_2[4]),// Coin -> 7 *  Mode or Start + B	
 	joydb9md_2[11],// start_2	-> 6 * Start
@@ -187,7 +187,7 @@ wire [15:0] joystick_1 =  status[63]    ? {
 	joydb9md_2[1], // btn_left	-> 1 * L
 	joydb9md_2[0], // btn_righ	-> 0 * R 
 	} 
-	: status[62] ? joystick_0_USB : joystick_1_USB;
+	: status[62] ? joystick_analog_0_USB : joystick_analog_1_USB;
 
 
 
@@ -222,10 +222,10 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.ioctl_addr(ioctl_addr),
 	.ioctl_dout(ioctl_dout),
 
-	.joystick_0(joystick_0_USB),
-	.joystick_1(joystick_1_USB),
-	.joystick_analog_0(joystick_analog_0),
-	.joystick_analog_1(joystick_analog_1),
+	.joystick_0(joystick_0),
+	.joystick_1(joystick_1),
+	.joystick_analog_0(joystick_analog_0_USB),
+	.joystick_analog_1(joystick_analog_1_USB),
 	.spinner_0(sp0),
 	.spinner_1(sp1),
 	.joy_raw({joydb9md_1[4],joydb9md_1[6],joydb9md_1[3:0]}),
