@@ -1,3 +1,7 @@
+Attention:  This core is experimental. 
+            It does not work correctly with joysticks.
+            Try with Spinner and report.
+
 A new option has been added in the main menu of this core called: "UserIO Joystick" to activate joysticks 
 Mega Drive/Genesis (DB9MD) or Neo-Geo/Supergun (DB15). This feature is disabled by default, therefore you
 must enter the menu for the first time to activate it and save.

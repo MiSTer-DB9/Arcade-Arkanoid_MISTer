@@ -98,16 +98,14 @@ module emu
 
 assign VGA_F1    = 0;
 
-wire         CLK_JOY = CLK_50M;         //Assign clock between 40-50Mhz
-wire   [2:0] JOY_FLAG  = {status[62],status[63],status[61]}; //Assign 3 bits of status (31:29) o (63:61)
+wire         CLK_JOY = CLK_48M;         //Assign clock between 40-50Mhz
+wire   [2:0] JOY_FLAG  = {status[62],status[63],status[61]}; //Assign 3 bits of status o (63:61)
 wire         JOY_CLK, JOY_LOAD, JOY_SPLIT, JOY_MDSEL;
 wire   [5:0] JOY_MDIN  = JOY_FLAG[2] ? {USER_IN[6],USER_IN[3],USER_IN[5],USER_IN[7],USER_IN[1],USER_IN[2]} : '1;
 wire         JOY_DATA  = JOY_FLAG[1] ? USER_IN[5] : '1;
 assign       USER_OUT  = JOY_FLAG[2] ? {3'b111,JOY_SPLIT,3'b111,JOY_MDSEL} : JOY_FLAG[1] ? {6'b111111,JOY_CLK,JOY_LOAD} : '1;
 assign       USER_MODE = JOY_FLAG[2:1] ;
 assign       USER_OSD  = joydb_1[10] & joydb_1[6];
-
-
 
 assign LED_USER  = ioctl_download;
 assign LED_DISK  = 0;
@@ -122,11 +120,12 @@ parameter CONF_STR = {
 	"H0OE,Aspect Ratio,Original,Wide;",
 	"H0OD,Orientation,Vert,Horz;",
 	"OFH,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
+	"-;",
+	"OK,Pad Control,Kbd/Joy/Mouse,Spinner;",
+	"OIJ,Spinner Resolution,High,Medium,Low;",
+	"-;",
 	"oUV,UserIO Joystick,Off,DB9MD,DB15 ;",
 	"oT,UserIO Players, 1 Player,2 Players;",
-	"-;",
-	"D1OK,Pad Control,Kbd/Joy/Mouse,Spinner;",
-	"D1OIJ,Spinner Resolution,High,Medium,Low;",
 	"-;",
 	"O12,Credits,1 coin 1 credit,2 coins 1 credit,1 coin 2 credits,1 coin 6 credits;",
 	"O3,Lives,3,5;",
