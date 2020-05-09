@@ -1,5 +1,5 @@
-Attention:  This core is experimental. 
-            It does not work correctly with joysticks.
+Attention:  This is experimental core. 
+            It does not work correctly with joysticks DB9.
             Try with Spinner and report.
 
 A new option has been added in the main menu of this core called: "UserIO Joystick" to activate joysticks 
