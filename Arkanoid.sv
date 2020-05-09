@@ -98,7 +98,7 @@ module emu
 
 assign VGA_F1    = 0;
 
-wire         CLK_JOY = CLK_48M;         //Assign clock between 40-50Mhz
+wire         CLK_JOY = CLK_50M;         //Assign clock between 40-50Mhz
 wire   [2:0] JOY_FLAG  = {status[62],status[63],status[61]}; //Assign 3 bits of status o (63:61)
 wire         JOY_CLK, JOY_LOAD, JOY_SPLIT, JOY_MDSEL;
 wire   [5:0] JOY_MDIN  = JOY_FLAG[2] ? {USER_IN[6],USER_IN[3],USER_IN[5],USER_IN[7],USER_IN[1],USER_IN[2]} : '1;
@@ -124,7 +124,7 @@ parameter CONF_STR = {
 	"OK,Pad Control,Kbd/Joy/Mouse,Spinner;",
 	"OIJ,Spinner Resolution,High,Medium,Low;",
 	"-;",
-	"oUV,UserIO Joystick,Off,DB9MD,DB15 ;",
+	"oUV,UserIO         ,Off,DB9MD,DB15 ;",
 	"oT,UserIO Players, 1 Player,2 Players;",
 	"-;",
 	"O12,Credits,1 coin 1 credit,2 coins 1 credit,1 coin 2 credits,1 coin 6 credits;",
@@ -165,7 +165,7 @@ wire [21:0] gamma_bus;
 
 wire  [8:0] sp0, sp1;
 
-// S2 CO S1 F2 F1 U D L R 
+// S2 CO S1 F2 F1 U D L R * Experimental. It does not work correctly with joysticks. Try with Spinner and report.
 wire [31:0] joystick_0 = joydb_1ena ? {joydb_1[9],joydb_1[11]|(joydb_1[10]&joydb_1[5]),joydb_1[10],joydb_1[5:0]} : joystick_0_USB;
 wire [31:0] joystick_1 = joydb_2ena ? {joydb_2[10],joydb_2[11]|(joydb_2[10]&joydb_2[5]),joydb_2[9],joydb_2[5:0]} : joydb_1ena ? joystick_0_USB : joystick_1_USB;
 
