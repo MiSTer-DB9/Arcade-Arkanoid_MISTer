@@ -47,8 +47,8 @@ module emu
 	output        CE_PIXEL,
 
 	//Video aspect ratio for HDMI. Most retro systems have ratio 4:3.
-	output  [7:0] VIDEO_ARX,
-	output  [7:0] VIDEO_ARY,
+	output [11:0] VIDEO_ARX,
+	output [11:0] VIDEO_ARY,
 
 	output  [7:0] VGA_R,
 	output  [7:0] VGA_G,
@@ -58,6 +58,7 @@ module emu
 	output        VGA_DE,    // = ~(VBlank | HBlank)
 	output        VGA_F1,
 	output [1:0]  VGA_SL,
+	output        VGA_SCALER, // Force VGA scaler
 
 	// Use framebuffer from DDRAM
 	// FB_FORMAT:
@@ -65,8 +66,7 @@ module emu
 	//    [3]   : 0=16bits 565 1=16bits 1555
 	//    [4]   : 0=RGB  1=BGR (for 16/24/32 modes)
 	//
-	// stride is modulo 256 of bytes
-
+	// FB_STRIDE either 0 (rounded to 256 bytes) or multiple of 16 bytes.
 	output        FB_EN,
 	output  [4:0] FB_FORMAT,
 	output [11:0] FB_WIDTH,
@@ -75,6 +75,15 @@ module emu
 	output [13:0] FB_STRIDE,
 	input         FB_VBL,
 	input         FB_LL,
+	output        FB_FORCE_BLANK,
+
+	// Palette control for 8bit modes.
+	// Ignored for other video modes.
+	output        FB_PAL_CLK,
+	output  [7:0] FB_PAL_ADDR,
+	output [23:0] FB_PAL_DOUT,
+	input  [23:0] FB_PAL_DIN,
+	output        FB_PAL_WR,
 
 	output        LED_USER,  // 1 - ON, 0 - OFF.
 
@@ -88,6 +97,17 @@ module emu
 	output [15:0] AUDIO_L,
 	output [15:0] AUDIO_R,
 	output        AUDIO_S,    // 1 - signed audio samples, 0 - unsigned
+	output  [1:0] AUDIO_MIX, // 0 - no mix, 1 - 25%, 2 - 50%, 3 - 100% (mono)
+
+	//ADC
+	inout   [3:0] ADC_BUS,
+
+	//SD-SPI
+	output        SD_SCK,
+	output        SD_MOSI,
+	input         SD_MISO,
+	output        SD_CS,
+	input         SD_CD,
 
 	//High latency DDR3 RAM interface
 	//Use for non-critical time purposes
@@ -102,6 +122,26 @@ module emu
 	output  [7:0] DDRAM_BE,
 	output        DDRAM_WE,
 
+	//SDRAM interface with lower latency
+	output        SDRAM_CLK,
+	output        SDRAM_CKE,
+	output [12:0] SDRAM_A,
+	output  [1:0] SDRAM_BA,
+	inout  [15:0] SDRAM_DQ,
+	output        SDRAM_DQML,
+	output        SDRAM_DQMH,
+	output        SDRAM_nCS,
+	output        SDRAM_nCAS,
+	output        SDRAM_nRAS,
+	output        SDRAM_nWE,
+
+	input         UART_CTS,
+	output        UART_RTS,
+	input         UART_RXD,
+	output        UART_TXD,
+	output        UART_DTR,
+	input         UART_DSR,
+
 	// Open-drain User port.
 	// 0 - D+/RX
 	// 1 - D-/TX
@@ -113,7 +153,7 @@ module emu
 	output	[7:0] USER_OUT
 );
 
-assign VGA_F1    = 0;
+assign ADC_BUS  = 'Z;
 
 wire         CLK_JOY = CLK_50M;         //Assign clock between 40-50Mhz
 wire   [2:0] JOY_FLAG  = {status[62],status[63],status[61]}; //Assign 3 bits of status o (63:61)
@@ -124,19 +164,37 @@ assign       USER_OUT  = JOY_FLAG[2] ? {3'b111,JOY_SPLIT,3'b111,JOY_MDSEL} : JOY
 assign       USER_MODE = JOY_FLAG[2:1] ;
 assign       USER_OSD  = joydb_1[10] & joydb_1[6];
 
+assign {UART_RTS, UART_TXD, UART_DTR} = 0;
+assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
+assign {SDRAM_DQ, SDRAM_A, SDRAM_BA, SDRAM_CLK, SDRAM_CKE, SDRAM_DQML, SDRAM_DQMH, SDRAM_nWE, SDRAM_nCAS, SDRAM_nRAS, SDRAM_nCS} = 'Z;
+
+assign VGA_F1 = 0;
+assign VGA_SCALER = status[21];
+
+wire [15:0] audio;
+assign AUDIO_L = audio;
+assign AUDIO_R = audio;
+assign AUDIO_S = 1;
+assign AUDIO_MIX = 0;
+
 assign LED_USER  = ioctl_download;
 assign LED_DISK  = 0;
 assign LED_POWER = 0;
 
-assign VIDEO_ARX = status[14] ? 8'd16 : status[13] ? 8'd4 : 8'd3;
-assign VIDEO_ARY = status[14] ? 8'd9  : status[13] ? 8'd3 : 8'd4;
+///////////////////////////////////////////////////
+
+wire [1:0] ar = status[14:13];
+
+assign VIDEO_ARX = status[12] ? ((!ar) ? 12'd4 : (ar - 1'd1)) : ((!ar) ? 12'd3 : (ar - 1'd1));
+assign VIDEO_ARY = status[12] ? ((!ar) ? 12'd3 : 12'd0) : ((!ar) ? 12'd4 : 12'd0);
 
 `include "build_id.v"
 parameter CONF_STR = {
 	"A.ARKANOID;;",
-	"H0OE,Aspect Ratio,Original,Wide;",
-	"H0OD,Orientation,Vert,Horz;",
+	"ODE,Aspect Ratio,Original,Full screen,[ARC1],[ARC2];",
+	"OC,Orientation,Vert,Horz;",
 	"OFH,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
+	"OL,Force VGA Scaler,Off,On;",
 	"-;",
 	"OK,Pad Control,Kbd/Joy/Mouse,Spinner;",
 	"OIJ,Spinner Resolution,High,Medium,Low;",
@@ -145,7 +203,7 @@ parameter CONF_STR = {
 	"oT,UserIO Players, 1 Player,2 Players;",
 	"-;",
 	"DIP;",
-	"OC,Sound chip,YM2149,AY-3-8910;",
+	"OB,Sound chip,YM2149,AY-3-8910;",
 	"-;",
 	"R0,Reset;",
 	"J1,Fire,Fast,Start P1,Coin,Start P2;",
@@ -158,7 +216,10 @@ parameter CONF_STR = {
 wire [63:0] status;
 wire  [1:0] buttons;
 wire        forced_scandoubler;
-wire        direct_video;
+wire  [1:0] buttons;
+wire [31:0] status;
+wire [10:0] ps2_key;
+wire [24:0] ps2_mouse;
 
 wire        ioctl_download;
 wire        ioctl_wr;
@@ -166,14 +227,13 @@ wire [24:0] ioctl_addr;
 wire  [7:0] ioctl_dout;
 wire  [7:0] ioctl_index;
 
-wire [10:0] ps2_key;
-wire [24:0] ps2_mouse;
 wire [31:0] joystick_0_USB, joystick_1_USB;
 wire [31:0] joy = joystick_0 | joystick_1;
 wire [15:0] joystick_analog_0, joystick_analog_1;
 wire  [7:0] joya = joystick_analog_0[7:0] ? joystick_analog_0[7:0] : joystick_analog_1[7:0];
 
 wire [21:0] gamma_bus;
+wire        direct_video;
 
 wire  [8:0] sp0, sp1;
 
@@ -217,15 +277,16 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 (
 	.clk_sys(CLK_12M),
 	.HPS_BUS(HPS_BUS),
-
+	.EXT_BUS(),
+	.gamma_bus(gamma_bus),
+	.direct_video(direct_video),
+	
 	.conf_str(CONF_STR),
+	.forced_scandoubler(forced_scandoubler),
 
 	.buttons(buttons),
 	.status(status),
 	.status_menumask({use_io,direct_video}),
-	.forced_scandoubler(forced_scandoubler),
-	.gamma_bus(gamma_bus),
-	.direct_video(direct_video),
 
 	.ioctl_download(ioctl_download),
 	.ioctl_wr(ioctl_wr),
@@ -483,7 +544,7 @@ always @(posedge CLK_48M) begin
 end
 
 wire rotate_ccw = 0;
-wire no_rotate = status[13] | direct_video;
+wire no_rotate = status[12] | direct_video;
 screen_rotate screen_rotate(.*);
 
 arcade_video #(256,12) arcade_video
@@ -534,18 +595,12 @@ Arkanoid Arkanoid_inst
 	.video_g(g),                                      //output [3:0] video_g
 	.video_b(b),                                      //output [3:0] video_b
 	
-	.ym2149_clk_div(status[12]),                      //Easter egg - controls the YM2149 clock divider for bootlegs with overclocked AY-3-8910s (default on)
+	.ym2149_clk_div(status[11]),                      //Easter egg - controls the YM2149 clock divider for bootlegs with overclocked AY-3-8910s (default on)
 
 	.ioctl_addr(ioctl_addr),
 	.ioctl_wr(ioctl_wr && !ioctl_index),
 	.ioctl_data(ioctl_dout)
 );
-
-wire [15:0] audio;
-
-assign AUDIO_L = audio;
-assign AUDIO_R = audio;
-assign AUDIO_S = 1;
 
 endmodule
 
