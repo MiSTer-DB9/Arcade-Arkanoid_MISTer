@@ -35,6 +35,7 @@ module Arkanoid
 	
 	input                clk_12m,
 	input                ym2149_clk_div,
+	input                vol_boost,
 	input          [7:0] dip_sw,
 	
 	output signed [15:0] sound,
@@ -176,7 +177,7 @@ arkanoid_lpf lpf
 );
 
 //Apply gain to final audio output
-assign sound = sound_filtered * 6'd16;
+assign sound = vol_boost ? (sound_filtered * 6'd32) : (sound_filtered * 6'd16);
 
 //Direct modelling of data inputs to the Z80
 assign z80_Din = 
@@ -884,7 +885,6 @@ eprom_5 IC62
 (
 	.ADDR(tilerom_A),
 	.CLK(clk_12m),
-	.ENA(tilerom_n_ce),
 	.DATA(eprom5_D),
 	.ADDR_DL(ioctl_addr),
 	.CLK_DL(clk_12m),
@@ -896,7 +896,6 @@ eprom_4 IC63
 (
 	.ADDR(tilerom_A),
 	.CLK(clk_12m),
-	.ENA(tilerom_n_ce),
 	.DATA(eprom4_D),
 	.ADDR_DL(ioctl_addr),
 	.CLK_DL(clk_12m),
@@ -908,7 +907,6 @@ eprom_3 IC64
 (
 	.ADDR(tilerom_A),
 	.CLK(clk_12m),
-	.ENA(tilerom_n_ce),
 	.DATA(eprom3_D),
 	.ADDR_DL(ioctl_addr),
 	.CLK_DL(clk_12m),

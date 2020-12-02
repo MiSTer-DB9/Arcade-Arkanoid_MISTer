@@ -119,7 +119,6 @@ module eprom_3
 	input logic [14:0] ADDR,
 	input logic [24:0] ADDR_DL,
 	input logic [7:0]  DATA_IN,
-	input logic        ENA,
 	input logic        CS_DL,
 	input logic        WR,
 	output logic [7:0] DATA
@@ -129,7 +128,6 @@ module eprom_3
 		.clock_a(CLK),
 		.address_a(ADDR[14:0]),
 		.q_a(DATA[7:0]),
-		.byteena_a(ENA),
 
 		.clock_b(CLK_DL),
 		.address_b(ADDR_DL[14:0]),
@@ -145,7 +143,6 @@ module eprom_4
 	input logic [14:0] ADDR,
 	input logic [24:0] ADDR_DL,
 	input logic [7:0]  DATA_IN,
-	input logic        ENA,
 	input logic        CS_DL,
 	input logic        WR,
 	output logic [7:0] DATA
@@ -155,7 +152,6 @@ module eprom_4
 		.clock_a(CLK),
 		.address_a(ADDR[14:0]),
 		.q_a(DATA[7:0]),
-		.byteena_a(ENA),
 
 		.clock_b(CLK_DL),
 		.address_b(ADDR_DL[14:0]),
@@ -171,7 +167,6 @@ module eprom_5
 	input logic [14:0] ADDR,
 	input logic [24:0] ADDR_DL,
 	input logic [7:0]  DATA_IN,
-	input logic        ENA,
 	input logic        CS_DL,
 	input logic        WR,
 	output logic [7:0] DATA
@@ -181,7 +176,6 @@ module eprom_5
 		.clock_a(CLK),
 		.address_a(ADDR[14:0]),
 		.q_a(DATA[7:0]),
-		.byteena_a(ENA),
 
 		.clock_b(CLK_DL),
 		.address_b(ADDR_DL[14:0]),
