@@ -167,9 +167,10 @@ assign       USER_OSD  = joydb_1[10] & joydb_1[6];
 assign {UART_RTS, UART_TXD, UART_DTR} = 0;
 assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
 assign {SDRAM_DQ, SDRAM_A, SDRAM_BA, SDRAM_CLK, SDRAM_CKE, SDRAM_DQML, SDRAM_DQMH, SDRAM_nWE, SDRAM_nCAS, SDRAM_nRAS, SDRAM_nCS} = 'Z;
+assign {FB_PAL_CLK, FB_FORCE_BLANK, FB_PAL_ADDR, FB_PAL_DOUT, FB_PAL_WR} = '0;
 
 assign VGA_F1 = 0;
-assign VGA_SCALER = status[21];
+assign VGA_SCALER = 0;
 
 wire [15:0] audio;
 assign AUDIO_L = audio;
@@ -185,8 +186,8 @@ assign LED_POWER = 0;
 
 wire [1:0] ar = status[14:13];
 
-assign VIDEO_ARX = status[12] ? ((!ar) ? 12'd4 : (ar - 1'd1)) : ((!ar) ? 12'd3 : (ar - 1'd1));
-assign VIDEO_ARY = status[12] ? ((!ar) ? 12'd3 : 12'd0) : ((!ar) ? 12'd4 : 12'd0);
+assign VIDEO_ARX = status[12] ? ((!ar) ? 12'd64 : (ar - 1'd1)) : ((!ar) ? 12'd55 : (ar - 1'd1));
+assign VIDEO_ARY = status[12] ? ((!ar) ? 12'd55 : 12'd0) : ((!ar) ? 12'd64 : 12'd0);
 
 `include "build_id.v"
 parameter CONF_STR = {
@@ -194,7 +195,6 @@ parameter CONF_STR = {
 	"ODE,Aspect Ratio,Original,Full screen,[ARC1],[ARC2];",
 	"OC,Orientation,Vert,Horz;",
 	"OFH,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
-	"OL,Force VGA Scaler,Off,On;",
 	"-;",
 	"OK,Pad Control,Kbd/Joy/Mouse,Spinner;",
 	"OIJ,Spinner Resolution,High,Medium,Low;",
@@ -204,6 +204,7 @@ parameter CONF_STR = {
 	"-;",
 	"DIP;",
 	"OB,Sound chip,YM2149,AY-3-8910;",
+	"OA,Volume boost,Off,On;",
 	"-;",
 	"R0,Reset;",
 	"J1,Fire,Fast,Start P1,Coin,Start P2;",
@@ -596,6 +597,7 @@ Arkanoid Arkanoid_inst
 	.video_b(b),                                      //output [3:0] video_b
 	
 	.ym2149_clk_div(status[11]),                      //Easter egg - controls the YM2149 clock divider for bootlegs with overclocked AY-3-8910s (default on)
+	.vol_boost(status[10]),                           //Audio volume boost option
 
 	.ioctl_addr(ioctl_addr),
 	.ioctl_wr(ioctl_wr && !ioctl_index),
