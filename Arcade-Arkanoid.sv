@@ -214,11 +214,9 @@ parameter CONF_STR = {
 
 ///////////////////////////////////////////////////
 
-wire [63:0] status;
-wire  [1:0] buttons;
 wire        forced_scandoubler;
 wire  [1:0] buttons;
-wire [31:0] status;
+wire [63:0] status;
 wire [10:0] ps2_key;
 wire [24:0] ps2_mouse;
 
