@@ -421,7 +421,7 @@ always @(posedge CLK_12M) begin
 		end
 	end
 
-	old_io <= USER_IN[1:0];
+	if (~|JOY_FLAG[2:1]) old_io <= USER_IN[1:0];
 	if(old_io != USER_IN[1:0]) use_io <= 1;
 end
 
