@@ -1,6 +1,4 @@
 set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
-set_global_assignment -name SYSTEMVERILOG_FILE Arcade-Arkanoid.sv
-set_global_assignment -name SYSTEMVERILOG_FILE rtl/Arkanoid.sv
 set_global_assignment -name VHDL_FILE rtl/cpu/T80/T80s.vhd
 set_global_assignment -name VHDL_FILE rtl/cpu/T80/T80.vhd
 set_global_assignment -name VHDL_FILE rtl/cpu/T80/T80_ALU.vhd
@@ -39,5 +37,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE rtl/logic/ls374.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/logic/ls393.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/logic/ls669.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/logic/cmos_4584.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/Arkanoid.sv
+set_global_assignment -name SYSTEMVERILOG_FILE Arcade-Arkanoid.sv
 set_global_assignment -name VERILOG_FILE joydb9md.v
 set_global_assignment -name VERILOG_FILE joydb15.v
