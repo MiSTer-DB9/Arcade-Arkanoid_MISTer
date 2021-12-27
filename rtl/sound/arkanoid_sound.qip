@@ -1,0 +1,5 @@
+set_global_assignment -name VHDL_FILE rtl/sound/YM2149/ym2149.vhd
+set_global_assignment -name VHDL_FILE rtl/sound/YM2149/vol_table.vhd
+set_global_assignment -name VERILOG_FILE rtl/sound/filter/arkanoid_lpf.v
+set_global_assignment -name VERILOG_FILE rtl/sound/filter/audio_iir_filter.v
+set_global_assignment -name VERILOG_FILE rtl/sound/filter/jt49_dcrm2.v

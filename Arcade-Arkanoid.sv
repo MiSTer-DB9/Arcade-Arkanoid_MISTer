@@ -223,10 +223,6 @@ assign VIDEO_ARY = status[12] ? ((!ar) ? 12'd55 : 12'd0) : ((!ar) ? 12'd64 : 12'
 `include "build_id.v"
 parameter CONF_STR = {
 	"A.ARKANOID;;",
-	"ODE,Aspect Ratio,Original,Full screen,[ARC1],[ARC2];",
-	"OC,Orientation,Vert,Horz;",
-	"OFH,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
-	"-;",
 	"OK,Pad Control,Kbd/Joy/Mouse,Spinner;",
 	"OIJ,Spinner Resolution,High,Medium,Low;",
 	"O1,SNAC Spinner,Disable,Enable;",
@@ -234,13 +230,28 @@ parameter CONF_STR = {
 	"oUV,UserIO         ,Off,DB9MD,DB15 ;",
 	"oT,UserIO Players, 1 Player,2 Players;",
 	"-;",
+	"H2OR,Autosave Hiscores,Off,On;",
+	"-;",
+	"OL,Game Speed,Native,60Hz Adjust;",
+	"P1,Video Options;",
+	"P1ODE,Aspect Ratio,Original,Full screen,[ARC1],[ARC2];",
+	"P1OC,Orientation,Vert,Horz;",
+	"P1OFH,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
+	"P2,Sound Options;",
+	"P2OB,Sound chip,YM2149,AY-3-8910;",
+	"P2OA,Volume boost,Off,On;",
+	"P3,Pause Options;",
+	"P3OP,Pause when OSD is open,On,Off;",
+	"P3OQ,Dim video after 10s,On,Off;",
+	"P4,Screen Centering;",
+	"P4O36,H Center,0,-1,-2,-3,-4,-5,-6,-7,+7,+6,+5,+4,+3,+2,+1;",
+	"P4O79,V Center,0,-1,-2,-3,-4,-5,-6,-7;",
+	"-;",
 	"DIP;",
-	"OB,Sound chip,YM2149,AY-3-8910;",
-	"OA,Volume boost,Off,On;",
 	"-;",
 	"R0,Reset;",
-	"J1,Fire,Fast,Start P1,Coin,Start P2;",
-	"jn,A,B,Start,R,Select;",
+	"J1,Fire,Fast,Start P1,Coin,Start P2,Pause;",
+	"jn,A,B,Start,R,Select,L;",
 	"V,v",`BUILD_DATE
 };
 
@@ -253,10 +264,13 @@ wire [10:0] ps2_key;
 wire [24:0] ps2_mouse;
 
 wire        ioctl_download;
+wire        ioctl_upload;
+wire        ioctl_upload_req;
+wire  [7:0] ioctl_index;
 wire        ioctl_wr;
 wire [24:0] ioctl_addr;
 wire  [7:0] ioctl_dout;
-wire  [7:0] ioctl_index;
+wire  [7:0] ioctl_din;
 
 wire [31:0] joystick_0_USB, joystick_1_USB;
 wire [31:0] joy = joystick_0 | joystick_1;
@@ -306,7 +320,7 @@ joy_db15 joy_db15
 
 hps_io #(.CONF_STR(CONF_STR)) hps_io
 (
-	.clk_sys(CLK_12M),
+	.clk_sys(CLK_48M),
 	.HPS_BUS(HPS_BUS),
 	.EXT_BUS(),
 	.gamma_bus(gamma_bus),
@@ -316,18 +330,21 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 
 	.buttons(buttons),
 	.status(status),
-	.status_menumask({use_io,direct_video}),
+	.status_menumask({~hs_configured,use_io,direct_video}),
 
 	.ioctl_download(ioctl_download),
+	.ioctl_upload(ioctl_upload),
+	.ioctl_upload_req(ioctl_upload_req),
 	.ioctl_wr(ioctl_wr),
 	.ioctl_addr(ioctl_addr),
 	.ioctl_dout(ioctl_dout),
+	.ioctl_din(ioctl_din),
 	.ioctl_index(ioctl_index),
 
 	.joystick_0(joystick_0_USB),
 	.joystick_1(joystick_1_USB),
-	.joystick_analog_0(joystick_analog_0),
-	.joystick_analog_1(joystick_analog_1),
+	.joystick_l_analog_0(joystick_analog_0),
+	.joystick_l_analog_1(joystick_analog_1),
 	.spinner_0(sp0),
 	.spinner_1(sp1),
 	.joy_raw(joydb_1[5:0]),
@@ -337,15 +354,77 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 
 ////////////////////   CLOCKS   ///////////////////
 
-wire CLK_12M;
 wire CLK_48M;
+wire locked;
 
 pll pll
 (
 	.refclk(CLK_50M),
-	.outclk_0(CLK_12M),
-	.outclk_1(CLK_48M)
+	.rst(0),
+	.outclk_0(CLK_48M),
+	.reconfig_to_pll(reconfig_to_pll),
+	.reconfig_from_pll(reconfig_from_pll),
+	.locked(locked)
 );
+
+wire [63:0] reconfig_to_pll;
+wire [63:0] reconfig_from_pll;
+wire        cfg_waitrequest;
+reg         cfg_write;
+reg   [5:0] cfg_address;
+reg  [31:0] cfg_data;
+
+//Reconfigure PLL to apply an ~1.4% overclock to Arkanoid to bring video timings in spec for 60Hz VSync
+pll_cfg pll_cfg
+(
+	.mgmt_clk(CLK_50M),
+	.mgmt_reset(0),
+	.mgmt_waitrequest(cfg_waitrequest),
+	.mgmt_read(0),
+	.mgmt_readdata(),
+	.mgmt_write(cfg_write),
+	.mgmt_address(cfg_address),
+	.mgmt_writedata(cfg_data),
+	.reconfig_to_pll(reconfig_to_pll),
+	.reconfig_from_pll(reconfig_from_pll)
+);
+
+always @(posedge CLK_50M) begin
+	reg overclock = 0, overclock2 = 0;
+	reg [2:0] state = 0;
+	reg overclock_r;
+
+	overclock <= status[21];
+	overclock2 <= overclock;
+
+	cfg_write <= 0;
+	if(overclock2 == overclock && overclock2 != overclock_r) begin
+		state <= 1;
+		overclock_r <= overclock2;
+	end
+
+	if(!cfg_waitrequest) begin
+		if(state)
+			state <= state + 3'd1;
+		case(state)
+			1: begin
+				cfg_address <= 0;
+				cfg_data <= 0;
+				cfg_write <= 1;
+			end
+			5: begin
+				cfg_address <= 7;
+				cfg_data <= overclock_r ? 3262113561 : 2748778984;
+				cfg_write <= 1;
+			end
+			7: begin
+				cfg_address <= 2;
+				cfg_data <= 0;
+				cfg_write <= 1;
+			end
+		endcase
+	end
+end
 
 wire reset = RESET | status[0] | buttons[1];
 
@@ -356,12 +435,12 @@ reg [1:0] spinner_encoder = 2'b11; //spinner encoder is a standard AB type encod
 wire [11:0] spres = 12'd2<<(status[19:18] - !m_fast + 1'd1);
 reg use_io = 0; // 1 - use encoder on USER_IN[1:0] pins
 
-always @(posedge CLK_12M) begin
+always @(posedge CLK_48M) begin
 	reg [15:0] spin_counter;
 	reg        old_state;
 	reg  [1:0] old_io;
 	reg [11:0] position = 0;
-	reg        ce_6m;
+	reg  [2:0] ce_6m;
 	reg [11:0] div_4k;
 	reg        use_sp = 0;
 	reg  [1:0] old_emu_sp = 0;
@@ -372,8 +451,8 @@ always @(posedge CLK_12M) begin
 	new_emu_sp <= {m_right,m_left};
 	new_sp <= {sp1[8],sp0[8]};
 
-	ce_6m <= ~ce_6m;
-	if(ce_6m) begin
+	ce_6m <= ce_6m + 3'd1;
+	if(!ce_6m) begin
 	
 		old_sp <= new_sp;
 		if(new_sp ^ old_sp) use_sp <= 1;
@@ -463,39 +542,44 @@ end
 reg [1:0] raw_encoder = 2'b11;
 wire encA = USER_IN[0];
 wire encB = USER_IN[1];
-always @(posedge CLK_12M) begin
+always @(posedge CLK_48M) begin
+	reg [1:0] ce_12m;
 	reg encAr;
 
-	encAr <= encA;
-	if(encAr != encA) begin 
-		case({encA ^ encB, raw_encoder}) //If encoder moves, generate the signal depends of direction. 
-			{1'b1, 2'b00}: raw_encoder <= 2'b01;
-			{1'b1, 2'b01}: raw_encoder <= 2'b11;
-			{1'b1, 2'b11}: raw_encoder <= 2'b10;
-			{1'b1, 2'b10}: raw_encoder <= 2'b00;
-			{1'b0, 2'b00}: raw_encoder <= 2'b10;
-			{1'b0, 2'b10}: raw_encoder <= 2'b11;
-			{1'b0, 2'b11}: raw_encoder <= 2'b01;
-			{1'b0, 2'b01}: raw_encoder <= 2'b00;
-		endcase
+	ce_12m <= ce_12m + 2'd1;
+	if(!ce_12m) begin
+		encAr <= encA;
+		if(encAr != encA) begin 
+			case({encA ^ encB, raw_encoder}) //If encoder moves, generate the signal depends of direction. 
+				{1'b1, 2'b00}: raw_encoder <= 2'b01;
+				{1'b1, 2'b01}: raw_encoder <= 2'b11;
+				{1'b1, 2'b11}: raw_encoder <= 2'b10;
+				{1'b1, 2'b10}: raw_encoder <= 2'b00;
+				{1'b0, 2'b00}: raw_encoder <= 2'b10;
+				{1'b0, 2'b10}: raw_encoder <= 2'b11;
+				{1'b0, 2'b11}: raw_encoder <= 2'b01;
+				{1'b0, 2'b01}: raw_encoder <= 2'b00;
+			endcase
+		end
 	end
 end
 
 ///////////////////         Keyboard           //////////////////
 
-reg btn_fire  = 0;
 reg btn_left  = 0;
 reg btn_right = 0;
+reg btn_fire  = 0;
 reg btn_fast  = 0;
 reg btn_coin1 = 0;
 reg btn_coin2 = 0;
-reg btn_service  = 0;
 reg btn_1p_start = 0;
 reg btn_2p_start = 0;
+reg btn_pause    = 0;
+reg btn_service  = 0;
 
 wire pressed = ps2_key[9];
 wire [7:0] code = ps2_key[7:0];
-always @(posedge CLK_12M) begin
+always @(posedge CLK_48M) begin
 	reg old_state;
 	old_state <= ps2_key[10];
 	if(old_state != ps2_key[10]) begin
@@ -505,6 +589,7 @@ always @(posedge CLK_12M) begin
 			'h2E: btn_coin1    <= pressed; // 5
 			'h36: btn_coin2    <= pressed; // 6
 			'h46: btn_service  <= pressed; // 9
+			'h4D: btn_pause    <= pressed; // P
 
 			'h11: btn_fast     <= pressed; // alt
 			'h6B: btn_left     <= pressed; // left
@@ -524,9 +609,22 @@ wire m_coin1  = btn_coin1    | joy[7];
 wire m_coin2  = btn_coin2;
 wire m_left   = btn_left     | joy[1];
 wire m_right  = btn_right    | joy[0];
+wire m_pause  = btn_pause    | joy[9];
+
+// PAUSE SYSTEM
+wire pause_cpu;
+wire [11:0] rgb_out;
+pause #(4,4,4,48) pause
+(
+	.*,
+	.clk_sys(CLK_48M),
+	.user_button(m_pause),
+	.pause_request(hs_pause),
+	.options(~status[26:25])
+);
 
 reg [7:0] dip_sw[8];	// Active-LOW
-always @(posedge CLK_12M) begin
+always @(posedge CLK_48M) begin
 	if(ioctl_wr && (ioctl_index==254) && !ioctl_addr[24:3])
 		dip_sw[ioctl_addr[2:0]] <= ioctl_dout;
 end
@@ -576,6 +674,7 @@ end
 
 wire rotate_ccw = 0;
 wire no_rotate = status[12] | direct_video;
+wire flip = ~no_rotate;
 screen_rotate screen_rotate(.*);
 
 arcade_video #(256,12) arcade_video
@@ -584,7 +683,7 @@ arcade_video #(256,12) arcade_video
 
 	.clk_video(CLK_48M),
 
-	.RGB_in({r,g,b}),
+	.RGB_in(rgb_out),
 	.HBlank(hblank),
 	.VBlank(vblank),
 	.HSync(hs),
@@ -598,7 +697,7 @@ Arkanoid Arkanoid_inst
 (
 	.reset(~reset),                                   //input reset
 
-	.clk_12m(CLK_12M),                                //input clk_12m
+	.clk_48m(CLK_48M),                                //input clk_48m
 
 	.spinner(use_io ? raw_encoder : spinner_encoder), //input [1:0] spinner
 	
@@ -617,6 +716,9 @@ Arkanoid Arkanoid_inst
 	
 	.sound(audio),                                    //output [15:0] sound
 	
+	.h_center(status[6:3]),                           //Screen centering
+	.v_center(status[9:7]),
+	
 	.video_hsync(hs),                                 //output video_hsync
 	.video_vsync(vs),                                 //output video_vsync
 	.video_vblank(vblank),                            //output video_vblank
@@ -628,10 +730,50 @@ Arkanoid Arkanoid_inst
 	
 	.ym2149_clk_div(status[11]),                      //Easter egg - controls the YM2149 clock divider for bootlegs with overclocked AY-3-8910s (default on)
 	.vol_boost(status[10]),                           //Audio volume boost option
+	.overclock(status[21]),                           //Flag to signal that Arkanoid has been overclocked to normalize video timings in order to maintain consistent sound pitch
 
 	.ioctl_addr(ioctl_addr),
 	.ioctl_wr(ioctl_wr && !ioctl_index),
-	.ioctl_data(ioctl_dout)
+	.ioctl_data(ioctl_dout),
+	
+	.pause(pause_cpu),
+
+	.hs_address(hs_address),
+	.hs_data_out(hs_data_out),
+	.hs_data_in(hs_data_in),
+	.hs_write(hs_write_enable)
+);
+
+// HISCORE SYSTEM
+// --------------
+wire [15:0]hs_address;
+wire [7:0] hs_data_in;
+wire [7:0] hs_data_out;
+wire hs_write_enable;
+wire hs_access_read;
+wire hs_access_write;
+wire hs_pause;
+wire hs_configured;
+
+hiscore #(
+	.HS_ADDRESSWIDTH(16),
+	.CFG_ADDRESSWIDTH(3),
+	.CFG_LENGTHWIDTH(2)
+) hi (
+	.*,
+	.clk(CLK_48M),
+	.paused(pause_cpu),
+	.autosave(status[27]),
+	.ram_address(hs_address),
+	.data_from_ram(hs_data_out),
+	.data_to_ram(hs_data_in),
+	.data_from_hps(ioctl_dout),
+	.data_to_hps(ioctl_din),
+	.ram_write(hs_write_enable),
+	.ram_intent_read(hs_access_read),
+	.ram_intent_write(hs_access_write),
+	.pause_cpu(hs_pause),
+	.configured(hs_configured)
 );
 
 endmodule

@@ -27,7 +27,7 @@ module arkanoid_lpf(
 	input signed [15:0] in,
 	output signed [15:0] out);
 	
-	reg [9:0] div = 64; //Sample at 12MHz/64 = 187500Hz
+	reg [9:0] div = 256; //Sample at 48MHz/256 = 187500Hz
 	
 	//Coefficients computed with Octave/Matlab/Online filter calculators.
 	//or with scipy.signal.bessel or similar tools
