@@ -59,9 +59,9 @@ GND      |_|14         15|_| shift_out(1)
 
 module mb112s146
 (
+	input        clk, cen,
 	input        n_clr, shift_ld,
 	input        sel,
-	input        clk,
 	input  [1:0] s_in,
 	input  [7:0] d1_in, d2_in,
 	output [1:0] shift_out
@@ -78,7 +78,7 @@ always_ff @(posedge clk or negedge n_clr) begin
 		shift_r_1 <= 8'd0;
 		shift_r_2 <= 8'd0;
 	end
-	else begin
+	else if(cen) begin
 		//Left shift data 1 input
 		shift_l_1[0] <= (s_in[0] & shift_ld) | (~shift_ld & d1_in[0]);
 		shift_l_1[1] <= (shift_l_1[0] & shift_ld) | (~shift_ld & d1_in[1]);

@@ -51,12 +51,12 @@
 		<patch offset="0x33F4">49</patch>
 		<patch offset="0x3437">49</patch>
 		<patch offset="0x5042">	
-					00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-					00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-					00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-					00 00 00 00 00 00 00 00 00 00 FF 00 00 00 00 00
-					00 00 00 00 00
-				</patch>
+			00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+			00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+			00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+			00 00 00 00 00 00 00 00 00 00 FF 00 00 00 00 00
+			00 00 00 00 00
+		</patch>
 		<patch offset="0x7B82">4E 4F 54 49 43 45 BE 54</patch>
 		<patch offset="0x7D9F">49</patch>
 		<patch offset="0x8000">15</patch>
@@ -64,12 +64,16 @@
 		<patch offset="0x9769">AF</patch>
 		<patch offset="0xBDA5">ED</patch>
 		<patch offset="0xBFFF">33</patch>
-		</rom>
+	</rom>
 	<rom index="2"></rom>
-	<rom index="3"></rom>
-	<rom index="4"></rom>
-
-	<nvram></nvram>
+	<rom index="3" md5="none">
+		<part>
+		00 80 00 00 00 FF 00 02 00 02 00 01 00 FF 02 00
+		00 00 EF 79 00 23 00 52
+		00 00 C4 DF 00 03 00 00
+		</part>
+	</rom>
+	<nvram index="4" size="38"/>
 
 	<remark></remark>
 
