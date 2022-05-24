@@ -4,7 +4,7 @@
 //  Copyright (C) 2018 Sorgelig
 //
 //  Arkanoid for MiSTer
-//  Copyright (C) 2018, 2020 Ace, Enforcer, Ash Evans (aka ElectronAsh/OzOnE)
+//  Copyright (C) 2018, 2022 Ace, Enforcer, Ash Evans (aka ElectronAsh/OzOnE)
 //  and Kitrinx (aka Rysha)
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,7 +37,7 @@ module emu
 	input         RESET,
 
 	//Must be passed to hps_io module
-	inout  [45:0] HPS_BUS,
+	inout  [48:0] HPS_BUS,
 
 	//Base video clock. Usually equals to CLK_SYS.
 	output        CLK_VIDEO,
@@ -257,11 +257,11 @@ parameter CONF_STR = {
 
 ///////////////////////////////////////////////////
 
-wire        forced_scandoubler;
-wire  [1:0] buttons;
-wire [63:0] status;
-wire [10:0] ps2_key;
-wire [24:0] ps2_mouse;
+wire         forced_scandoubler;
+wire   [1:0] buttons;
+wire [127:0] status;
+wire  [10:0] ps2_key;
+wire  [24:0] ps2_mouse;
 
 wire        ioctl_download;
 wire        ioctl_upload;
@@ -414,7 +414,7 @@ always @(posedge CLK_50M) begin
 			end
 			5: begin
 				cfg_address <= 7;
-				cfg_data <= overclock_r ? 3262113561 : 2748778984;
+				cfg_data <= overclock_r ? 3218820204 : 2748778984;
 				cfg_write <= 1;
 			end
 			7: begin
@@ -613,8 +613,8 @@ wire m_pause  = btn_pause    | joy[9];
 
 // PAUSE SYSTEM
 wire pause_cpu;
-wire [11:0] rgb_out;
-pause #(4,4,4,48) pause
+wire [23:0] rgb_out;
+pause #(8,8,8,48) pause
 (
 	.*,
 	.clk_sys(CLK_48M),
@@ -662,7 +662,20 @@ end
 
 wire hblank, vblank;
 wire hs, vs;
-wire [3:0] r,g,b;
+wire [3:0] r_out, g_out, b_out;
+
+//Adjust the color tones based on the measured outputs of the weighted resistor DAC
+//on the PCB
+wire [7:0] arkanoid_color[16] =
+'{
+	8'd0,   8'd14,  8'd31,  8'd46,
+	8'd67,  8'd81,  8'd98,  8'd113,
+	8'd143, 8'd157, 8'd174, 8'd188,
+	8'd209, 8'd223, 8'd241, 8'd255
+};
+wire [7:0] r = arkanoid_color[r_out];
+wire [7:0] g = arkanoid_color[g_out];
+wire [7:0] b = arkanoid_color[b_out];
 
 reg ce_pix;
 always @(posedge CLK_48M) begin
@@ -674,10 +687,11 @@ end
 
 wire rotate_ccw = 0;
 wire no_rotate = status[12] | direct_video;
-wire flip = ~no_rotate;
+wire flip = video_rotated;
+wire video_rotated;
 screen_rotate screen_rotate(.*);
 
-arcade_video #(256,12) arcade_video
+arcade_video #(256, 24) arcade_video
 (
 	.*,
 
@@ -724,9 +738,9 @@ Arkanoid Arkanoid_inst
 	.video_vblank(vblank),                            //output video_vblank
 	.video_hblank(hblank),                            //output video_hblank
 	
-	.video_r(r),                                      //output [3:0] video_r
-	.video_g(g),                                      //output [3:0] video_g
-	.video_b(b),                                      //output [3:0] video_b
+	.video_r(r_out),                                  //output [3:0] video_r
+	.video_g(g_out),                                  //output [3:0] video_g
+	.video_b(b_out),                                  //output [3:0] video_b
 	
 	.ym2149_clk_div(status[11]),                      //Easter egg - controls the YM2149 clock divider for bootlegs with overclocked AY-3-8910s (default on)
 	.vol_boost(status[10]),                           //Audio volume boost option
