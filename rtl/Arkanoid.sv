@@ -1,7 +1,7 @@
 //============================================================================
 // 
 //  Arkanoid top-level module
-//  Copyright (C) 2018, 2020 Ace, Enforcer, Ash Evans (aka ElectronAsh/OzOnE)
+//  Copyright (C) 2018, 2022 Ace, Enforcer, Ash Evans (aka ElectronAsh/OzOnE)
 //  and Kitrinx (aka Rysha)
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
@@ -118,7 +118,7 @@ jtframe_frac_cen sound_cen
 (
 	.clk(clk_48m),
 	.n(10'd31),
-	.m(10'd503),
+	.m(10'd502),
 	.cenb({1'bZ, n_cen_3m_adjust})
 );
 
