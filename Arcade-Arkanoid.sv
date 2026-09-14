@@ -235,7 +235,7 @@ wire  [15:0] db9_remap_din;
 // [MiSTer-DB9 END]
 joydb joydb (
   .clk             ( CLK_JOY         ),
-  .clk_sys         ( clk_sys            ),
+  .clk_sys         ( CLK_48M            ),
   .USER_IN         ( USER_IN         ),
   .OSD_STATUS          ( OSD_STATUS          ),
   .snac_active         ( snac_active         ),
@@ -355,8 +355,8 @@ wire  [8:0] sp0, sp1;
 
 // S2 CO S1 F2 F1 U D L R * Experimental. It does not work correctly with joysticks. Try with Spinner and report.
 // [MiSTer-DB9-Pro BEGIN] - DB controllers muted while OSD is open; Coin on F (button 6), Start P2 via combo, Pause on C
-wire [31:0] joystick_0 = joydb_1ena ? (OSD_STATUS ? 32'b0 : {joydb_1[6],joydb_1[11],joydb_1[9],joydb_1[10],joydb_1[5:0]}) : joystick_0_USB;
-wire [31:0] joystick_1 = joydb_2ena ? (OSD_STATUS ? 32'b0 : {joydb_2[6],joydb_2[11],joydb_2[9],joydb_2[10],joydb_2[5:0]}) : joydb_1ena ? joystick_0_USB : joystick_1_USB;
+wire [31:0] joystick_0 = joydb_1ena ? (OSD_STATUS ? 32'b0 : joydb_1_mapped[9:0]) : joystick_0_USB;
+wire [31:0] joystick_1 = joydb_2ena ? (OSD_STATUS ? 32'b0 : joydb_2_mapped[9:0]) : joydb_1ena ? joystick_0_USB : joystick_1_USB;
 // [MiSTer-DB9-Pro END]
 
 
